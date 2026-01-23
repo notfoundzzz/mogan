@@ -37,6 +37,7 @@ public:
   void use_keywords_of_lang (string lang_code);
   void insert_start_char (char start_char);
   void insert_extra_char (char extra_char);
+  void set_check_path_boundaries (bool check) { check_path_boundaries= check; }
 
 private:
   void                    do_parse (string s, int& pos);
@@ -44,6 +45,7 @@ private:
   string                  current_keyword;
   array<char>             extra_chars;
   array<char>             start_chars;
+  bool                    check_path_boundaries;
 };
 
 #endif

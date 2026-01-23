@@ -89,6 +89,10 @@ public:
     return separator != '\0' && separator == param;
   }
 
+  inline void set_check_path_boundaries (bool check) {
+    check_path_boundaries= check;
+  }
+
   void use_fortran_style ();
   void use_r_style ();
 
@@ -96,6 +100,7 @@ private:
   char               separator;
   hashset<string>    bool_features;
   keyword_parser_rep suffix_parser;
+  bool               check_path_boundaries;
 
   void do_parse (string s, int& pos);
 

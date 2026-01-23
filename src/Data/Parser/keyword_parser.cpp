@@ -18,10 +18,11 @@
 #include "tree_helper.hpp"
 
 keyword_parser_rep::keyword_parser_rep () {
-  current_keyword= "";
-  keyword_group  = hashmap<string, string> ();
-  extra_chars    = array<char> ();
-  start_chars    = array<char> ();
+  current_keyword      = "";
+  keyword_group        = hashmap<string, string> ();
+  extra_chars          = array<char> ();
+  start_chars          = array<char> ();
+  check_path_boundaries= false;
 }
 
 void
@@ -54,10 +55,43 @@ read_keyword (string s, int& i, string& result, array<char> extras,
 
 bool
 keyword_parser_rep::can_parse (string s, int pos) {
+  // Check that the preceding character is not a word character if path boundary
+  // checking is enabled
+  if (check_path_boundaries && pos > 0) {
+    char prev= s[pos - 1];
+    if (is_alpha (prev) || is_digit (prev) || contains (prev, extra_chars) ||
+        contains (prev, start_chars)) {
+      return false;
+    }
+    // Additionally, avoid matching keywords after '.' or '/' (common in paths)
+    // Also avoid matching after '@' (email/git user separator) and ':'
+    // (URL/Windows drive separator) Also avoid matching after '-' and '_'
+    // (common in filenames)
+    if (prev == '.' || prev == '/' || prev == '\\' || prev == '@' ||
+        prev == ':' || prev == '-' || prev == '_') {
+      return false;
+    }
+  }
+
   string word;
   bool   hit= read_keyword (s, pos, word, extra_chars, start_chars) &&
             keyword_group->contains (word);
-  if (hit) current_keyword= word;
+
+  if (hit) {
+    // Avoid matching keywords before '.' or '/' (common in paths) if path
+    // boundary checking is enabled Also avoid matching before '@' (email/git
+    // user separator) and ':' (URL/Windows drive separator) Also avoid matching
+    // before '-' and '_' (common in filenames)
+    if (check_path_boundaries && pos < N (s)) {
+      char next= s[pos];
+      if (next == '.' || next == '/' || next == '\\' || next == '@' ||
+          next == ':' || next == '-' || next == '_') {
+        return false;
+      }
+    }
+    current_keyword= word;
+  }
+
   return hit;
 }
 

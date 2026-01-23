@@ -49,6 +49,13 @@ prog_language_rep::prog_language_rep (string name)
 
   tree preprocessor_config= get_parser_config (name, "preprocessor");
   customize_preprocessor (preprocessor_config);
+
+  // Enable path boundary checking for bash to avoid highlighting commands in
+  // paths
+  if (name == "bash") {
+    keyword_parser.set_check_path_boundaries (true);
+    number_parser.set_check_path_boundaries (true);
+  }
 }
 
 tree
