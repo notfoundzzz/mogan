@@ -26,6 +26,29 @@
 
     \;
 
+<<<<<<< Updated upstream
+=======
+    # --------- comment----------
+
+    if [[ $# -gt 0 ]]; then
+
+    \ \ \ \ echo "参数个数: $#"
+
+    \ \ \ \ echo "参数列表: $@"
+
+    else
+
+    \ \ \ \ echo "未传入任何参数"
+
+    fi
+
+    \;
+
+    count=${#backups[@]}
+
+    \;
+
+>>>>>>> Stashed changes
     # --------- file/url----------
 
     tar xzvf nvim-linux-x86_64.tar.gz

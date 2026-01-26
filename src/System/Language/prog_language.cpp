@@ -320,6 +320,23 @@ prog_language_rep::get_color (tree t, int start, int end) {
   int pos= 0;
   while (pos <= start) {
     if (inline_comment_parser.can_parse (s, pos)) {
+      // Special handling for bash: # is only a comment at start of line or
+      // after whitespace
+      if (lan_name == "bash" && pos < N (s) && s[pos] == '#') {
+        bool is_comment_start= true;
+        if (pos > 0) {
+          char prev= s[pos - 1];
+          // Check if previous character is whitespace
+          if (!is_space (prev)) {
+            is_comment_start= false;
+          }
+        }
+        // pos == 0 means start of line, which is a valid comment start
+        if (!is_comment_start) {
+          pos++;
+          continue;
+        }
+      }
       return decode_color (lan_name, encode_color ("comment"));
     }
     pos++;
