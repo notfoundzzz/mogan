@@ -163,6 +163,7 @@
 (tm-define (parser-feature lan key)
   (:require (and (== lan "bash") (== key "comment")))
   `(,(string->symbol key)
+    (bool_features "space_before")
     (inline "#")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
