@@ -215,6 +215,12 @@ prog_language_rep::customize_comment (tree config) {
       }
       inline_comment_parser.set_starts (inline_comment_starts);
     }
+    else if (label == "bool_features") {
+      for (int j= 0; j < N (feature); j++) {
+        string key= get_label (feature[j]);
+        if (key == "space_before") require_space_before= true;
+      }
+    }
     else if (label == "space_before") {
       for (int j= 0; j < N (feature); j++) {
         string key= get_label (feature[j]);
