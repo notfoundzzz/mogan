@@ -204,6 +204,7 @@ prog_language_rep::customize_string (tree config) {
 
 void
 prog_language_rep::customize_comment (tree config) {
+  bool require_space_before= false;
   for (int i= 0; i < N (config); i++) {
     tree   feature= config[i];
     string label  = get_label (feature);
@@ -214,7 +215,14 @@ prog_language_rep::customize_comment (tree config) {
       }
       inline_comment_parser.set_starts (inline_comment_starts);
     }
+    else if (label == "space_before") {
+      for (int j= 0; j < N (feature); j++) {
+        string key= get_label (feature[j]);
+        if (key == "true") require_space_before= true;
+      }
+    }
   }
+  inline_comment_parser.set_require_space_before (require_space_before);
 }
 
 void
@@ -320,23 +328,6 @@ prog_language_rep::get_color (tree t, int start, int end) {
   int pos= 0;
   while (pos <= start) {
     if (inline_comment_parser.can_parse (s, pos)) {
-      // Special handling for bash: # is only a comment at start of line or
-      // after whitespace
-      if (lan_name == "bash" && pos < N (s) && s[pos] == '#') {
-        bool is_comment_start= true;
-        if (pos > 0) {
-          char prev= s[pos - 1];
-          // Check if previous character is whitespace
-          if (!is_space (prev)) {
-            is_comment_start= false;
-          }
-        }
-        // pos == 0 means start of line, which is a valid comment start
-        if (!is_comment_start) {
-          pos++;
-          continue;
-        }
-      }
       return decode_color (lan_name, encode_color ("comment"));
     }
     pos++;

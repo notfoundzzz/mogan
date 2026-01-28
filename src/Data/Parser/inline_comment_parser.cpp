@@ -14,6 +14,7 @@
 
 inline_comment_parser_rep::inline_comment_parser_rep () {
   m_starts= array<string> ();
+  m_require_space_before= false;
 }
 
 void
@@ -21,10 +22,18 @@ inline_comment_parser_rep::set_starts (const array<string>& p_starts) {
   m_starts= p_starts;
 }
 
+void
+inline_comment_parser_rep::set_require_space_before (bool require) {
+  m_require_space_before= require;
+}
+
 bool
 inline_comment_parser_rep::can_parse (string s, int pos) {
   if (pos >= N (s)) return false;
   if (N (m_starts) == 0) return false;
+  if (m_require_space_before && pos > 0 && !is_space (s[pos - 1])) {
+    return false;
+  }
 
   int i= 0;
   while (i < N (m_starts)) {

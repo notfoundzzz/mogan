@@ -21,10 +21,12 @@ public:
   string get_parser_name () { return "inline_comment_parser"; }
 
   void set_starts (const array<string>& p_starts);
+  void set_require_space_before (bool require);
   bool can_parse (string s, int pos);
 
 private:
   array<string> m_starts;
+  bool          m_require_space_before;
   void          do_parse (string s, int& pos);
 };
 
