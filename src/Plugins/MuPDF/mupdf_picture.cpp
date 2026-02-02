@@ -70,14 +70,74 @@ mupdf_picture_rep::set_origin (int ox2, int oy2) {
 
 color
 mupdf_picture_rep::internal_get_pixel (int x, int y) {
-  unsigned char* samples= fz_pixmap_samples (mupdf_context (), pix);
-  return rgbap_to_argb (((color*) samples)[x + w * (h - 1 - y)]);
+  if (x < 0 || y < 0 || x >= w || y >= h) return 0;
+
+  fz_context*    ctx    = mupdf_context ();
+  unsigned char* samples= fz_pixmap_samples (ctx, pix);
+  int            n      = pix->n;
+  bool           alpha  = pix->alpha;
+  int            stride = pix->stride;
+  int            row    = h - 1 - y;
+  unsigned char* p      = samples + row * stride + x * n;
+
+  int r= 0, g= 0, b= 0, a= 255;
+  if (n <= 0) return 0;
+  if (n == 1) {
+    r= g= b= p[0];
+  }
+  else if (n == 2) {
+    r= g= b= p[0];
+    a      = p[1];
+  }
+  else {
+    r= p[0];
+    g= p[1];
+    b= p[2];
+    if (alpha) a= p[n - 1];
+  }
+
+  if (a == 255 || !alpha) return rgb_color (r, g, b, 255);
+  return rgbap_to_argb ((a << 24) + (b << 16) + (g << 8) + r);
 }
 
 void
 mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
-  unsigned char* samples= fz_pixmap_samples (mupdf_context (), pix);
-  ((color*) samples)[x + w * (h - 1 - y)]= argb_to_rgbap (c);
+  if (x < 0 || y < 0 || x >= w || y >= h) return;
+
+  fz_context*    ctx    = mupdf_context ();
+  unsigned char* samples= fz_pixmap_samples (ctx, pix);
+  int            n      = pix->n;
+  bool           alpha  = pix->alpha;
+  int            stride = pix->stride;
+  int            row    = h - 1 - y;
+  unsigned char* p      = samples + row * stride + x * n;
+
+  if (n <= 0) return;
+
+  int r, g, b, a;
+  get_rgb_color (c, r, g, b, a);
+
+  if (alpha) {
+    r= (r * a) / 255;
+    g= (g * a) / 255;
+    b= (b * a) / 255;
+  }
+
+  if (n == 1) {
+    p[0]= (unsigned char) ((77 * r + 150 * g + 29 * b) >> 8);
+    return;
+  }
+
+  if (n == 2) {
+    p[0]= (unsigned char) ((77 * r + 150 * g + 29 * b) >> 8);
+    p[1]= (unsigned char) a;
+    return;
+  }
+
+  p[0]= (unsigned char) r;
+  p[1]= (unsigned char) g;
+  p[2]= (unsigned char) b;
+  if (alpha) p[n - 1]= (unsigned char) a;
 }
 
 picture
