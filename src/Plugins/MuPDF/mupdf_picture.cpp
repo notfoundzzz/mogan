@@ -70,6 +70,7 @@ mupdf_picture_rep::set_origin (int ox2, int oy2) {
 
 color
 mupdf_picture_rep::internal_get_pixel (int x, int y) {
+  // 防御式边界检查：effect 链会频繁取样，越界时直接返回透明像素
   if (x < 0 || y < 0 || x >= w || y >= h) return 0;
 
   fz_context*    ctx    = mupdf_context ();
@@ -78,30 +79,25 @@ mupdf_picture_rep::internal_get_pixel (int x, int y) {
   bool           alpha  = pix->alpha;
   int            stride = pix->stride;
   int            row    = h - 1 - y;
-  unsigned char* p      = samples + row * stride + x * n;
+  // MuPDF 像素内存按 stride 排列，不能再按 color* 做线性强转
+  unsigned char* p= samples + row * stride + x * n;
 
-  int r= 0, g= 0, b= 0, a= 255;
-  if (n <= 0) return 0;
-  if (n == 1) {
-    r= g= b= p[0];
+  if (n == 3) {
+    // RGB: 无 alpha，直接按不透明颜色返回
+    return rgb_color (p[0], p[1], p[2], 255);
   }
-  else if (n == 2) {
-    r= g= b= p[0];
-    a      = p[1];
+  else if (n == 4) {
+    // RGBA: MuPDF 使用预乘 alpha，读取时需要反预乘
+    int a= p[3];
+    if (a == 255 || !alpha) return rgb_color (p[0], p[1], p[2], 255);
+    return rgbap_to_argb ((a << 24) + (p[2] << 16) + (p[1] << 8) + p[0]);
   }
-  else {
-    r= p[0];
-    g= p[1];
-    b= p[2];
-    if (alpha) a= p[n - 1];
-  }
-
-  if (a == 255 || !alpha) return rgb_color (r, g, b, 255);
-  return rgbap_to_argb ((a << 24) + (b << 16) + (g << 8) + r);
+  return 0;
 }
 
 void
 mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
+  // 防御式边界检查：越界写入直接忽略
   if (x < 0 || y < 0 || x >= w || y >= h) return;
 
   fz_context*    ctx    = mupdf_context ();
@@ -110,34 +106,33 @@ mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
   bool           alpha  = pix->alpha;
   int            stride = pix->stride;
   int            row    = h - 1 - y;
-  unsigned char* p      = samples + row * stride + x * n;
-
-  if (n <= 0) return;
+  // MuPDF 像素内存按 stride 排列，不能再按 color* 做线性强转
+  unsigned char* p= samples + row * stride + x * n;
 
   int r, g, b, a;
   get_rgb_color (c, r, g, b, a);
 
-  if (alpha) {
-    r= (r * a) / 255;
-    g= (g * a) / 255;
-    b= (b * a) / 255;
+  if (n == 3) {
+    // RGB: 直接写入三通道
+    p[0]= (unsigned char) r;
+    p[1]= (unsigned char) g;
+    p[2]= (unsigned char) b;
   }
-
-  if (n == 1) {
-    p[0]= (unsigned char) ((77 * r + 150 * g + 29 * b) >> 8);
-    return;
+  else if (n == 4) {
+    // RGBA: MuPDF 侧是预乘 alpha，需要先做预乘再写入
+    if (alpha) {
+      p[0]= (unsigned char) ((r * a) / 255);
+      p[1]= (unsigned char) ((g * a) / 255);
+      p[2]= (unsigned char) ((b * a) / 255);
+      p[3]= (unsigned char) a;
+    }
+    else {
+      p[0]= (unsigned char) r;
+      p[1]= (unsigned char) g;
+      p[2]= (unsigned char) b;
+      p[3]= (unsigned char) a;
+    }
   }
-
-  if (n == 2) {
-    p[0]= (unsigned char) ((77 * r + 150 * g + 29 * b) >> 8);
-    p[1]= (unsigned char) a;
-    return;
-  }
-
-  p[0]= (unsigned char) r;
-  p[1]= (unsigned char) g;
-  p[2]= (unsigned char) b;
-  if (alpha) p[n - 1]= (unsigned char) a;
 }
 
 picture
