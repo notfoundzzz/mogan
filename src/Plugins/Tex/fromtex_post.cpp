@@ -227,7 +227,12 @@ trim_cell_spaces (tree t) {
 static void
 parse_pmatrix (tree& r, tree t, int& i, string lb, string rb, string fm) {
   tree tformat (TFORMAT);
-  if (N (t[i]) == 2 && t[i][0] != "tabular") {
+  // alignedat 的参数是列对数，不是 array 的列格式串，这里不走
+  // parse_matrix_params。
+  if (N (t[i]) == 2 && (t[i][0] == "alignedat" || t[i][0] == "alignedat*")) {
+    tformat= parse_matrix_valign ("c");
+  }
+  else if (N (t[i]) == 2 && t[i][0] != "tabular") {
     tformat= parse_matrix_params (t[i][1]);
   }
   else if (N (t[i]) == 2 && t[i][0] == "tabular") {
@@ -300,6 +305,14 @@ parse_pmatrix (tree& r, tree t, int& i, string lb, string rb, string fm) {
       if (i < N (t)) continue;
       break;
     }
+    else if (v == tree (BEGIN, "aligned") || v == tree (BEGIN, "aligned*") ||
+             v == tree (BEGIN, "alignedat") ||
+             v == tree (BEGIN, "alignedat*")) {
+      // aligned 系列作为行内对齐块导入，避免 display 级环境造成错位。
+      parse_pmatrix (E, t, i, "", "", "tabular*");
+      if (i < N (t)) continue;
+      break;
+    }
     else if (v == tree (BEGIN, "matrix")) {
       parse_pmatrix (E, t, i, "", "", "tabular*");
       if (i < N (t)) continue;
@@ -332,6 +345,10 @@ parse_pmatrix (tree& r, tree t, int& i, string lb, string rb, string fm) {
     else if (v == tree (END, "tabularx")) break;
     else if (v == tree (END, "tabularx*")) break;
     else if (v == tree (END, "cases")) break;
+    else if (v == tree (END, "aligned")) break;
+    else if (v == tree (END, "aligned*")) break;
+    else if (v == tree (END, "alignedat")) break;
+    else if (v == tree (END, "alignedat*")) break;
     else if (v == tree (END, "stack")) break;
     else if (v == tree (END, "matrix")) break;
     else if (v == tree (END, "pmatrix")) break;
@@ -446,6 +463,9 @@ finalize_pmatrix (tree t) {
                  u[i][0] == "tabularx" || u[i][0] == "tabularx*")
           parse_pmatrix (r, u, i, "", "", "tabular*");
         else if (u[i][0] == "cases") parse_pmatrix (r, u, i, "", "", "choice");
+        else if (u[i][0] == "aligned" || u[i][0] == "aligned*" ||
+                 u[i][0] == "alignedat" || u[i][0] == "alignedat*")
+          parse_pmatrix (r, u, i, "", "", "tabular*");
         else if (u[i][0] == "stack") parse_pmatrix (r, u, i, "", "", "stack");
         else if (u[i][0] == "matrix")
           parse_pmatrix (r, u, i, "", "", "tabular*");

@@ -1,0 +1,68 @@
+<TMU|<tuple|1.1.0|2026.1.2>>
+
+<style|<tuple|generic|chinese|table-captions-above|number-europe|preview-ref>>
+
+<\body>
+  <LaTeX>代码:
+
+  <\code>
+    \ \ f(x)=\\left\\{\\begin{aligned}
+
+    \ \ -x^{2}+1&\\quad x\\neq0\\\\
+
+    \ \ 0&\\quad x=0
+
+    \ \ \\end{aligned}\\right.
+
+    \;
+
+    \ \ g(x)=\\left\\{\\begin{aligned}
+
+    \ \ x+1&\\quad x\<less\>0\\\\
+
+    \ \ x^2&\\quad x\\ge 0
+
+    \ \ \\end{aligned}\\right.
+
+    \;
+
+    \ \ h(x)=\\left\\{\\begin{aligned}
+
+    \ \ \\sin x&\\quad x\\in(-\\pi,0)\\\\
+
+    \ \ \\cos x&\\quad x\\in[0,\\pi)
+
+    \ \ \\end{aligned}\\right.
+
+    \;
+
+    \ \ F(x)=\\left\\{\\begin{aligned}
+
+    \ \ \\frac{x^2-1}{x-1}&\\quad x\\ne1\\\\
+
+    \ \ 2&\\quad x=1
+
+    \ \ \\end{aligned}\\right.
+  </code>
+
+  \;
+
+  渲染效果：
+
+  <\math>
+    <math|f<around|(|x|)>=<around*|{|<tabular*|<tformat|<table|<row|<cell|-x<rsup|2>+1>|<cell|<space|1em>x\<neq\>0>>|<row|<cell|0>|<cell|<space|1em>x=0>>>>>|\<nobracket\>>>
+
+    g(x)=<left|{><tabular*|<tformat|<table|<row|<cell|x+1>|<cell|<space|1em>x\<less\>0>>|<row|<cell|x<rsup|2>>|<cell|<space|1em>x\<ge\>0>>>>><right|.>
+
+    h(x)=<left|{><tabular*|<tformat|<table|<row|<cell|sin x>|<cell|<space|1em>x\<in\>(-\<pi\>,0)>>|<row|<cell|cos x>|<cell|<space|1em>x\<in\>[0,\<pi\>)>>>>><right|.>
+
+    F(x)=<left|{><tabular*|<tformat|<table|<row|<cell|<frac|x<rsup|2>-1|x-1>>|<cell|<space|1em>x\<ne\>1>>|<row|<cell|2>|<cell|<space|1em>x=1>>>>><right|.>
+  </math>
+</body>
+
+<\initial>
+  <\collection>
+    <associate|page-medium|paper>
+    <associate|page-screen-margin|false>
+  </collection>
+</initial>

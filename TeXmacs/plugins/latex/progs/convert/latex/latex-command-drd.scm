@@ -298,12 +298,14 @@
   begin-eqnarray begin-eqnarray*
   begin-flalign begin-flalign*
   begin-align begin-align*
+  begin-aligned begin-aligned*
   begin-multline begin-multline*
   begin-gather begin-gather*
   begin-eqsplit begin-eqsplit*)
 
 (logic-group latex-math-environment-1%
-  begin-alignat begin-alignat*)
+  begin-alignat begin-alignat*
+  begin-alignedat begin-alignedat*)
 
 (logic-rules
   ((latex-arity% 'x 0) (latex-control% 'x))
