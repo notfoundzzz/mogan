@@ -16,23 +16,21 @@
 
     \;
 
-    \ \ g(x)=\\left\\{\\begin{aligned}
+    \ \ A=\\begin{matrix}1&2\\\\3&4\\end{matrix},\\
 
-    \ \ x+1&\\quad x\<less\>0\\\\
+    \ \ B=\\begin{pmatrix}1&0\\\\0&1\\end{pmatrix},\\
 
-    \ \ x^2&\\quad x\\ge 0
-
-    \ \ \\end{aligned}\\right.
+    \ \ C=\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}
 
     \;
 
-    \ \ h(x)=\\left\\{\\begin{aligned}
+    \ \ g(x)=\\begin{cases}
 
-    \ \ \\sin x&\\quad x\\in(-\\pi,0)\\\\
+    \ \ x+1,& x\<less\>0\\\\
 
-    \ \ \\cos x&\\quad x\\in[0,\\pi)
+    \ \ x^2,& x\\ge 0
 
-    \ \ \\end{aligned}\\right.
+    \ \ \\end{cases}
 
     \;
 
@@ -47,17 +45,49 @@
 
   \;
 
-  渲染效果：
+  数学模式下智能粘贴：
 
   <\math>
     <math|f<around|(|x|)>=<around*|{|<tabular*|<tformat|<table|<row|<cell|-x<rsup|2>+1>|<cell|<space|1em>x\<neq\>0>>|<row|<cell|0>|<cell|<space|1em>x=0>>>>>|\<nobracket\>>>
 
-    g(x)=<left|{><tabular*|<tformat|<table|<row|<cell|x+1>|<cell|<space|1em>x\<less\>0>>|<row|<cell|x<rsup|2>>|<cell|<space|1em>x\<ge\>0>>>>><right|.>
+    A=<tabular*|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>,
 
-    h(x)=<left|{><tabular*|<tformat|<table|<row|<cell|sin x>|<cell|<space|1em>x\<in\>(-\<pi\>,0)>>|<row|<cell|cos x>|<cell|<space|1em>x\<in\>[0,\<pi\>)>>>>><right|.>
+    B=<matrix|<tformat|<table|<row|<cell|1>|<cell|0>>|<row|<cell|0>|<cell|1>>>>>,
 
-    F(x)=<left|{><tabular*|<tformat|<table|<row|<cell|<frac|x<rsup|2>-1|x-1>>|<cell|<space|1em>x\<ne\>1>>|<row|<cell|2>|<cell|<space|1em>x=1>>>>><right|.>
+    C=<left|[><tabular*|<tformat|<table|<row|<cell|a>|<cell|b>>|<row|<cell|c>|<cell|d>>>>><right|]>
+
+    g(x)=<choice|<tformat|<table|<row|<cell|x+1,>|<cell|x\<less\>0>>|<row|<cell|x<rsup|2>,>|<cell|x\<ge\>0>>>>>
+
+    F(x)=<math|<around*|{|<tabular*|<tformat|<table|<row|<cell|<frac|x<rsup|2>-1|x-1>>|<cell|<space|1em>x\<ne\>1>>|<row|<cell|2>|<cell|<space|1em>x=1>>>>>|\<nobracket\>>>
   </math>
+
+  非数学模式下智能粘贴：
+
+  f(x)=<math|<around*|{|<tabular*|<tformat|<table|<row|<cell|-x<rsup|2>+1>|<cell|<space|1em>x\<neq\>0>>|<row|<cell|0>|<cell|<space|1em>x=0>>>>>|\<nobracket\>>>
+
+  A=<tabular*|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>,
+
+  B=<matrix|<tformat|<table|<row|<cell|1>|<cell|0>>|<row|<cell|0>|<cell|1>>>>>,
+
+  C=<left|[><tabular*|<tformat|<table|<row|<cell|a>|<cell|b>>|<row|<cell|c>|<cell|d>>>>><right|]>
+
+  g(x)=<choice|<tformat|<table|<row|<cell|x+1,>|<cell|x\<less\>0>>|<row|<cell|x<rsup|2>,>|<cell|x\<ge\>0>>>>>
+
+  F(x)=<math|<around*|{|<tabular*|<tformat|<table|<row|<cell|<frac|x<rsup|2>-1|x-1>>|<cell|<space|1em>x\<ne\>1>>|<row|<cell|2>|<cell|<space|1em>x=1>>>>>|\<nobracket\>>>
+
+  \;
+
+  <LaTeX>源码：
+
+  对 B 选项，取 $f(x)=\\left\\{\\begin{aligned}-x^{2}+1&\\quad \ x\\neq0\\\\ 0&\\quad \ x=0\\end{aligned}\\right.$，知 $f(x)$ 在 $(-1,0)$ 单调，且 $f(x)$ 在 $(0,1)$ 单调，但仍满足 $f(0)$ 是极小值，排除。
+
+  \;
+
+  非数学模式下智能粘贴：
+
+  对 B 选项，取 <math|f<around|(|x|)>=<around*|{|<tabular*|<tformat|<table|<row|<cell|-x<rsup|2>+1>|<cell|<space|1em>x\<neq\>0>>|<row|<cell|0>|<cell|<space|1em>x=0>>>>>|\<nobracket\>>>，知 <math|f<around|(|x|)>> 在 <math|<around|(|-1,0|)>> 单调，且 <math|f<around|(|x|)>> 在 <math|<around|(|0,1|)>> 单调，但仍满足 <math|f<around|(|0|)>> 是极小值，排除。
+
+  \;
 </body>
 
 <\initial>

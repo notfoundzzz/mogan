@@ -209,6 +209,18 @@ parse_matrix_valign (tree t) {
   return tree (CWITH, "1", "-1", "1", "-1", CELL_VALIGN, "c");
 }
 
+static bool
+is_aligned_env_begin (tree t) {
+  return is_func (t, BEGIN) && (t[0] == "aligned" || t[0] == "aligned*" ||
+                                t[0] == "alignedat" || t[0] == "alignedat*");
+}
+
+static bool
+is_math_container (tree t) {
+  return is_compound (t, "math", 1) ||
+         (is_func (t, WITH, 3) && t[0] == MODE && t[1] == "math");
+}
+
 static tree
 trim_cell_spaces (tree t) {
   if (!is_func (t, TABLE)) return t;
@@ -447,15 +459,39 @@ parse_pmatrix (tree& r, tree t, int& i, string lb, string rb, string fm) {
 }
 
 static tree
-finalize_pmatrix (tree t) {
+finalize_pmatrix (tree t, bool in_math= false) {
   if (is_atomic (t)) return t;
+  if (is_math_container (t)) in_math= true;
+  if (is_func (t, WITH, 3) && t[0] == MODE && t[1] == "math") {
+    tree u (t, 3);
+    u[0]= t[0];
+    u[1]= t[1];
+    u[2]= finalize_pmatrix (t[2], true);
+    return u;
+  }
   int  i, n= N (t);
   tree u (t, n);
   for (i= 0; i < n; i++)
-    u[i]= finalize_pmatrix (t[i]);
+    u[i]= finalize_pmatrix (t[i], in_math);
   if (is_func (u, CONCAT)) {
     tree r (CONCAT);
-    for (i= 0; i < n; i++)
+    for (i= 0; i < n; i++) {
+      if (!in_math && is_func (u[i], LEFT, 1) && i + 1 < n &&
+          is_aligned_env_begin (u[i + 1])) {
+        // 在非数学上下文中，left...aligned...right 需要局部包裹为 math，
+        // 否则后续排版阶段可能把数学节点当文本处理而崩溃。
+        tree local (CONCAT);
+        local << u[i];
+        int j= i + 1;
+        parse_pmatrix (local, u, j, "", "", "tabular*");
+        if (j + 1 < n && is_func (u[j + 1], RIGHT, 1)) {
+          local << u[j + 1];
+          j++;
+        }
+        r << compound ("math", simplify_concat (local));
+        i= j;
+        continue;
+      }
       if (is_func (u[i], BEGIN)) {
         if (u[i][0] == "array" || u[i][0] == "array*")
           parse_pmatrix (r, u, i, "", "", "tabular*");
@@ -464,8 +500,15 @@ finalize_pmatrix (tree t) {
           parse_pmatrix (r, u, i, "", "", "tabular*");
         else if (u[i][0] == "cases") parse_pmatrix (r, u, i, "", "", "choice");
         else if (u[i][0] == "aligned" || u[i][0] == "aligned*" ||
-                 u[i][0] == "alignedat" || u[i][0] == "alignedat*")
-          parse_pmatrix (r, u, i, "", "", "tabular*");
+                 u[i][0] == "alignedat" || u[i][0] == "alignedat*") {
+          if (in_math) parse_pmatrix (r, u, i, "", "", "tabular*");
+          else {
+            // 非数学上下文下只对该子树做局部 math 包裹，避免污染外层环境。
+            tree local (CONCAT);
+            parse_pmatrix (local, u, i, "", "", "tabular*");
+            r << compound ("math", simplify_concat (local));
+          }
+        }
         else if (u[i][0] == "stack") parse_pmatrix (r, u, i, "", "", "stack");
         else if (u[i][0] == "matrix")
           parse_pmatrix (r, u, i, "", "", "tabular*");
@@ -479,6 +522,7 @@ finalize_pmatrix (tree t) {
         else r << u[i];
       }
       else r << u[i];
+    }
     return r;
   }
   else if (is_func (u, APPLY, 2) && (u[0] == "matrix"))
@@ -491,7 +535,7 @@ finalize_pmatrix (tree t) {
     if (is_func (u[1], CONCAT)) cc << A (u[1]);
     else cc << u[1];
     cc << tree (END, "stack");
-    return finalize_pmatrix (cc);
+    return finalize_pmatrix (cc, in_math);
   }
   else return u;
 }
@@ -1299,7 +1343,7 @@ finalize_document (tree t) {
   if (is_atomic (t)) t= tree (CONCAT, t);
   t= finalize_algorithms (t);
   t= finalize_returns (t);
-  t= finalize_pmatrix (t);
+  t= finalize_pmatrix (t, false);
   t= finalize_layout (t);
   if (!is_func (t, CONCAT)) return tree (DOCUMENT, t);
   t= make_paragraphs (t, tree (DOCUMENT));
