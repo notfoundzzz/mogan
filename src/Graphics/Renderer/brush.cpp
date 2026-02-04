@@ -146,6 +146,11 @@ make_brush (tree p, int a) {
     else return make_brush (named_color (s, a));
   }
   else {
+    // 防御性处理：非法复合树（例如未定义变量展开后的 UNINIT）
+    // 不能当作 pattern 继续解包，否则后续访问 pattern[1]/pattern[2] 可能崩溃。
+    if (N (p) != 4 || !is_atomic (p[0])) return tm_new<no_brush_rep> ();
+    if (as_string (p[0]) == "" || as_string (p[0]) == "{}")
+      return tm_new<no_brush_rep> ();
     color c= white;
     if (N (p) == 4) c= named_color (as_string (p[3]), a);
     return tm_new<pattern_brush_rep> (c, p, a);
@@ -176,7 +181,23 @@ void
 get_pattern_data (url& u, SI& w, SI& h, tree& eff, brush br, SI pixel) {
   // FIXME << what's about ratio and percentages wrt paper lengths?
   tree pattern= br->get_pattern ();
-  u           = br->get_pattern_url ();
+  // 防御性处理：如果 pattern 结构不完整，直接回退到安全默认值，
+  // 避免访问 pattern[1]/pattern[2] 时越界导致崩溃。
+  if (is_atomic (pattern) || N (pattern) < 3 || !is_atomic (pattern[0])) {
+    u  = url ();
+    w  = 35;
+    h  = 35;
+    eff= tree ("");
+    return;
+  }
+  u= br->get_pattern_url ();
+  if (is_none (u) || as_string (u) == "" || as_string (u) == "{}") {
+    u  = url ();
+    w  = 35;
+    h  = 35;
+    eff= tree ("");
+    return;
+  }
   int imw_pt, imh_pt;
   image_size (u, imw_pt, imh_pt);
   double pt = ((double) 600 * PIXEL) / 72.0;
