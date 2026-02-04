@@ -92,11 +92,11 @@
 
 (tm-define (matlab-bracket-open lbr rbr)
   ;; 插入一对括号或引号，并将光标定位在中间
-  (bracket-open lbr rbr))
+  (bracket-open lbr rbr "\\"))
 
 (tm-define (matlab-bracket-close lbr rbr)
   ;; 处理闭合括号或引号，并正确放置光标位置
-  (bracket-close lbr rbr))
+  (bracket-close lbr rbr "\\"))
 
 (tm-define (notify-cursor-moved status)
   (:require prog-highlight-brackets?)

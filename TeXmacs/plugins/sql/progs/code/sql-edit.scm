@@ -130,11 +130,11 @@
 
 (tm-define (sql-bracket-open lbr rbr)
   ;; Insert a pair of brackets/quotes and position cursor between them
-  (bracket-open lbr rbr))
+  (bracket-open lbr rbr "\\"))
 
 (tm-define (sql-bracket-close lbr rbr)
   ;; Handle closing bracket/quote and position cursor appropriately
-  (bracket-close lbr rbr))
+  (bracket-close lbr rbr "\\"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Comment toggling
