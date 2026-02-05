@@ -152,7 +152,7 @@ make_brush (tree p, int a) {
     if (as_string (p[0]) == "" || as_string (p[0]) == "{}")
       return tm_new<no_brush_rep> ();
     color c= white;
-    if (N (p) == 4) c= named_color (as_string (p[3]), a);
+    c      = named_color (as_string (p[3]), a);
     return tm_new<pattern_brush_rep> (c, p, a);
   }
 }
