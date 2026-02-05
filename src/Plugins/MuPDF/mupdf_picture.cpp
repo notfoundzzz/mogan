@@ -17,6 +17,7 @@
 #include "image_files.hpp"
 #include "new_view.hpp"
 #include "qt_utilities.hpp"
+#include "tm_debug.hpp"
 #include "tm_url.hpp"
 #include <QImage>
 
@@ -70,14 +71,109 @@ mupdf_picture_rep::set_origin (int ox2, int oy2) {
 
 color
 mupdf_picture_rep::internal_get_pixel (int x, int y) {
-  unsigned char* samples= fz_pixmap_samples (mupdf_context (), pix);
-  return rgbap_to_argb (((color*) samples)[x + w * (h - 1 - y)]);
+  // 防御式边界检查：effect 链会频繁取样，越界时直接返回透明像素
+  if (x < 0 || y < 0 || x >= w || y >= h) return 0;
+
+  fz_context*    ctx    = mupdf_context ();
+  unsigned char* samples= fz_pixmap_samples (ctx, pix);
+  int            n      = pix->n;
+  bool           alpha  = pix->alpha;
+  int            stride = pix->stride;
+  int            row    = h - 1 - y;
+  if (samples == NULL) {
+    // 关键防御：底层样本缓冲区异常时记录一次错误并返回透明像素
+    static bool logged_null_samples= false;
+    if (!logged_null_samples) {
+      std_error << "mupdf_picture_rep::internal_get_pixel: pixmap samples is "
+                   "NULL"
+                << LF;
+      logged_null_samples= true;
+    }
+    return 0;
+  }
+  // MuPDF 像素内存按 stride 排列，不能再按 color* 做线性强转
+  unsigned char* p= samples + row * stride + x * n;
+
+  if (n == 3) {
+    // RGB: 无 alpha，直接按不透明颜色返回
+    return rgb_color (p[0], p[1], p[2], 255);
+  }
+  else if (n == 4) {
+    // RGBA: MuPDF 使用预乘 alpha，读取时需要反预乘
+    int a= p[3];
+    if (a == 255 || !alpha) return rgb_color (p[0], p[1], p[2], 255);
+    return rgbap_to_argb ((a << 24) + (p[2] << 16) + (p[1] << 8) + p[0]);
+  }
+  // 非预期通道数只打印一次，避免高频取样导致日志洪泛
+  static bool logged_unsupported_channels= false;
+  if (!logged_unsupported_channels) {
+    std_error << "mupdf_picture_rep::internal_get_pixel: unsupported channel "
+                 "count n="
+              << n << ", alpha=" << alpha << ", stride=" << stride << LF;
+    logged_unsupported_channels= true;
+  }
+  return 0;
 }
 
 void
 mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
-  unsigned char* samples= fz_pixmap_samples (mupdf_context (), pix);
-  ((color*) samples)[x + w * (h - 1 - y)]= argb_to_rgbap (c);
+  // 防御式边界检查：越界写入直接忽略
+  if (x < 0 || y < 0 || x >= w || y >= h) return;
+
+  fz_context*    ctx    = mupdf_context ();
+  unsigned char* samples= fz_pixmap_samples (ctx, pix);
+  int            n      = pix->n;
+  bool           alpha  = pix->alpha;
+  int            stride = pix->stride;
+  int            row    = h - 1 - y;
+  if (samples == NULL) {
+    // 关键防御：底层样本缓冲区异常时记录一次错误并直接忽略写入
+    static bool logged_null_samples= false;
+    if (!logged_null_samples) {
+      std_error << "mupdf_picture_rep::internal_set_pixel: pixmap samples is "
+                   "NULL"
+                << LF;
+      logged_null_samples= true;
+    }
+    return;
+  }
+  // MuPDF 像素内存按 stride 排列，不能再按 color* 做线性强转
+  unsigned char* p= samples + row * stride + x * n;
+
+  int r, g, b, a;
+  get_rgb_color (c, r, g, b, a);
+
+  if (n == 3) {
+    // RGB: 直接写入三通道
+    p[0]= (unsigned char) r;
+    p[1]= (unsigned char) g;
+    p[2]= (unsigned char) b;
+  }
+  else if (n == 4) {
+    // RGBA: MuPDF 侧是预乘 alpha，需要先做预乘再写入
+    if (alpha) {
+      p[0]= (unsigned char) ((r * a) / 255);
+      p[1]= (unsigned char) ((g * a) / 255);
+      p[2]= (unsigned char) ((b * a) / 255);
+      p[3]= (unsigned char) a;
+    }
+    else {
+      p[0]= (unsigned char) r;
+      p[1]= (unsigned char) g;
+      p[2]= (unsigned char) b;
+      p[3]= (unsigned char) a;
+    }
+  }
+  else {
+    // 非预期通道数只打印一次，避免批量写像素时日志洪泛
+    static bool logged_unsupported_channels= false;
+    if (!logged_unsupported_channels) {
+      std_error << "mupdf_picture_rep::internal_set_pixel: unsupported channel "
+                   "count n="
+                << n << ", alpha=" << alpha << ", stride=" << stride << LF;
+      logged_unsupported_channels= true;
+    }
+  }
 }
 
 picture
