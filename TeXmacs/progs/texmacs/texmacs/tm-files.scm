@@ -177,7 +177,9 @@
       u)))
 
 (tm-define (buffer->windows-of-tabpage buf)
-  (remove (lambda (vw) (url-none? vw)) (map view->window-of-tabpage (buffer->views buf))))
+  ;; 某些时序下 view->window-of-tabpage 可能返回 #f，需先过滤再判定 url-none?
+  (remove (lambda (vw) (or (not vw) (url-none? vw)))
+          (map view->window-of-tabpage (buffer->views buf))))
 
 (tm-define (switch-to-buffer* buf)
   (let* ((wins (buffer->windows-of-tabpage buf))
@@ -541,25 +543,27 @@
 ;; Loading buffers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (startup-scratch-buffer? prev-buffer name opts)
+  ;; 仅在启动后首次打开真实文件时，才关闭默认“无标题”缓冲区。
+  (and prev-buffer
+       (!= prev-buffer name)
+       (nin? :background opts)
+       (nin? :new-window opts)
+       (url-scratch? prev-buffer)
+       (not (buffer-modified? prev-buffer))
+       (== (length (buffer-list)) 2)))
+
 (define (load-buffer-open name opts)
   ;;(display* "load-buffer-open " name ", " opts "\n")
   (cond ((in? :background opts) (noop))
         ((in? :new-window opts)
          (open-buffer-in-window name (buffer-get name) ""))
         (else
-         ;; Remember current buffer to check if it's an unmodified scratch buffer
-         (let ((prev-buffer (current-buffer)))
-           (with wins (buffer->windows-of-tabpage name)
-             (if (and (!= wins '())
-                      (in? (current-window) wins))
-                 (switch-to-buffer* name)
-                 (switch-to-buffer name)))
-           ;; Close the previous unmodified scratch buffer after loading new file
-           (when (and prev-buffer
-                      (!= prev-buffer name)
-                      (url-scratch? prev-buffer)
-                      (not (buffer-modified? prev-buffer)))
-             (cpp-buffer-close prev-buffer)))))
+         (with wins (buffer->windows-of-tabpage name)
+           (if (and (!= wins '())
+                    (in? (current-window) wins))
+               (switch-to-buffer* name)
+               (switch-to-buffer name)))))
   (buffer-notify-recent name)
   ;; Remember directory for file dialog
   (remember-file-dialog-directory name)
@@ -579,13 +583,18 @@
 (define (load-buffer-load name opts)
   ;;(display* "load-buffer-load " name ", " opts "\n")
   (let* ((path (url->system name))
-         (vname `(verbatim ,(utf8->cork path))))
+         (vname `(verbatim ,(utf8->cork path)))
+         (prev-buffer (current-buffer)))
     (cond ((buffer-exists? name)
            (load-buffer-open name opts))
           ((url-exists? name)
            (if (buffer-load name)
                (set-message `(concat "Could not load " ,vname) "Load file")
-               (load-buffer-open name opts)))
+               (begin
+                 (load-buffer-open name opts)
+                 ;; 仅在首次打开真实文件后清理默认无标题页。
+                 (when (startup-scratch-buffer? prev-buffer name opts)
+                   (cpp-buffer-close prev-buffer)))))
           (else
             (with msg "The file or buffer does not exist:"
               (begin
