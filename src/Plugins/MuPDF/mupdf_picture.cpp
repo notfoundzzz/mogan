@@ -17,6 +17,7 @@
 #include "image_files.hpp"
 #include "new_view.hpp"
 #include "qt_utilities.hpp"
+#include "tm_debug.hpp"
 #include "tm_url.hpp"
 #include <QImage>
 
@@ -76,6 +77,8 @@ mupdf_picture_rep::set_origin (int ox2, int oy2) {
  */
 color
 mupdf_picture_rep::internal_get_pixel (int x, int y) {
+  // 防御性检查：避免空指针或越界坐标导致非法访问。
+  if (pix == NULL) return 0;
   if (x < 0 || y < 0 || x >= w || y >= h) return 0;
 
   fz_context*    ctx    = mupdf_context ();
@@ -83,11 +86,29 @@ mupdf_picture_rep::internal_get_pixel (int x, int y) {
   int            n      = pix->n;
   bool           alpha  = pix->alpha;
   int            stride = pix->stride;
+  if (samples == NULL || stride <= 0) return 0;
+  if (n <= 0) {
+    static bool warned_n_le0_get= false;
+    if (!warned_n_le0_get) {
+      std_error << "mupdf_picture_rep::internal_get_pixel: invalid channel "
+                << "count n=" << n << LF;
+      warned_n_le0_get= true;
+    }
+    return 0;
+  }
+  if (n > 4) {
+    static bool warned_n_gt4_get= false;
+    if (!warned_n_gt4_get) {
+      std_error << "mupdf_picture_rep::internal_get_pixel: unsupported "
+                << "channel count n=" << n << LF;
+      warned_n_gt4_get= true;
+    }
+    return 0;
+  }
   int            row    = h - 1 - y;
   unsigned char* p      = samples + row * stride + x * n;
 
   int r= 0, g= 0, b= 0, a= 255;
-  if (n <= 0) return 0;
   if (n == 1) {
     r= g= b= p[0];
   }
@@ -114,6 +135,8 @@ mupdf_picture_rep::internal_get_pixel (int x, int y) {
  */
 void
 mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
+  // 防御性检查：避免空指针或越界坐标导致非法写入。
+  if (pix == NULL) return;
   if (x < 0 || y < 0 || x >= w || y >= h) return;
 
   fz_context*    ctx    = mupdf_context ();
@@ -121,10 +144,27 @@ mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
   int            n      = pix->n;
   bool           alpha  = pix->alpha;
   int            stride = pix->stride;
+  if (samples == NULL || stride <= 0) return;
+  if (n <= 0) {
+    static bool warned_n_le0_set= false;
+    if (!warned_n_le0_set) {
+      std_error << "mupdf_picture_rep::internal_set_pixel: invalid channel "
+                << "count n=" << n << LF;
+      warned_n_le0_set= true;
+    }
+    return;
+  }
+  if (n > 4) {
+    static bool warned_n_gt4_set= false;
+    if (!warned_n_gt4_set) {
+      std_error << "mupdf_picture_rep::internal_set_pixel: unsupported "
+                << "channel count n=" << n << LF;
+      warned_n_gt4_set= true;
+    }
+    return;
+  }
   int            row    = h - 1 - y;
   unsigned char* p      = samples + row * stride + x * n;
-
-  if (n <= 0) return;
 
   int r, g, b, a;
   get_rgb_color (c, r, g, b, a);
