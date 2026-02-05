@@ -780,6 +780,8 @@ edit_interface_rep::mouse_any (string type, SI x, SI y, int mods, time_t t,
   static tree      shown_code_tree      = tree ();
   static time_t    last_image_hover_time= 0;
   static time_t    last_code_hover_time = 0;
+  // 代码悬浮菜单隐藏延迟（毫秒），用于控制离开后的消失速度。
+  static const int code_popup_hide_delay= 250;
   if (type == "move") {
     if (!is_zero (last_image_brec)) { // already clicked on image
       // 检测鼠标是否在handles上
@@ -894,7 +896,7 @@ edit_interface_rep::mouse_any (string type, SI x, SI y, int mods, time_t t,
     set_cursor_style ("normal");
     time_t now= texmacs_time ();
     if (now - last_image_hover_time >= 500) hide_image_popup ();
-    if (now - last_code_hover_time >= 500) {
+    if (now - last_code_hover_time >= code_popup_hide_delay) {
       hide_code_popup ();
       shown_code_tree= tree ();
     }

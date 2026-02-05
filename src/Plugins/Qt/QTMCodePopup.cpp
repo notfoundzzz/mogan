@@ -14,8 +14,8 @@
 #include "scheme.hpp"
 
 #include <QAction>
-#include <QGuiApplication>
-#include <QScreen>
+#include <QFontMetrics>
+#include <algorithm>
 #include <cmath>
 
 // 悬浮菜单创建函数
@@ -107,22 +107,35 @@ QTMCodePopup::updatePosition (qt_renderer_rep* ren) {
   move (pos_x, pos_y);
 }
 
-// 根据DPI缩放和缩放比例自动调整按钮大小和窗口尺寸
+// 按按钮内容与字体动态计算弹窗尺寸，避免跨平台比例失衡。
 void
 QTMCodePopup::autoSize () {
-  QScreen*     Screen    = QGuiApplication::primaryScreen ();
-  const double Dpi       = Screen ? Screen->logicalDotsPerInch () : 96.0;
-  const double Scale     = Dpi / 96.0;
-  const int    baseWidth = 180;
-  const int    baseHeight= 36;
-  double       totalScale= Scale * cached_magf * 3.0;
-  if (cached_magf <= 0.16) {
-    cached_width = baseWidth;
-    cached_height= baseHeight;
-  }
-  else {
-    cached_width = int (baseWidth * totalScale);
-    cached_height= int (baseHeight * totalScale);
+  const int fallbackWidth = 120;
+  const int fallbackHeight= 28;
+  cached_width            = fallbackWidth;
+  cached_height           = fallbackHeight;
+  if (layout && copyBtn && langBtn) {
+    int lm= 0, tm= 0, rm= 0, bm= 0;
+    layout->getContentsMargins (&lm, &tm, &rm, &bm);
+    const int spacing= std::max (0, layout->spacing ());
+    const int btnW=
+        copyBtn->sizeHint ().width () + langBtn->sizeHint ().width () + spacing;
+    const int btnH= std::max (copyBtn->sizeHint ().height (),
+                              langBtn->sizeHint ().height ());
+
+    // 动态兜底：用当前字体度量计算最小按钮尺寸，避免固定值在 Linux 上显得过大。
+    QFontMetrics fmCopy (copyBtn->font ());
+    QFontMetrics fmLang (langBtn->font ());
+    const int    copyTextW= fmCopy.boundingRect (copyBtn->text ()).width ();
+    const int    langTextW= fmLang.boundingRect (langBtn->text ()).width ();
+    const int    copyMinW = copyTextW + 20;
+    const int    langMinW = langTextW + 20;
+    const int    textMinH = std::max (fmCopy.height (), fmLang.height ()) + 10;
+
+    const int dynamicMinW= copyMinW + langMinW + spacing + lm + rm;
+    const int dynamicMinH= textMinH + tm + bm;
+    cached_width         = std::max (btnW + lm + rm, dynamicMinW);
+    cached_height        = std::max (btnH + tm + bm, dynamicMinH);
   }
   setFixedSize (cached_width, cached_height);
 }
