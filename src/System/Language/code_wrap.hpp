@@ -1,3 +1,13 @@
+/******************************************************************************
+ * MODULE     : code_wrap.hpp
+ * DESCRIPTION: helpers for safe code wrapping boundaries
+ * COPYRIGHT  : (C) 2026  The MoganSTEM contributors
+ *******************************************************************************
+ * This software falls under the GNU general public license version 3 or later.
+ * It comes WITHOUT ANY WARRANTY WHATSOEVER. For details, see the file LICENSE
+ * in the root directory or <http://www.gnu.org/licenses/gpl-3.0.html>.
+ ******************************************************************************/
+
 #ifndef TM_CODE_WRAP_HPP
 #define TM_CODE_WRAP_HPP
 
