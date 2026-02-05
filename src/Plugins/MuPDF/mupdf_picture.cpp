@@ -17,6 +17,7 @@
 #include "image_files.hpp"
 #include "new_view.hpp"
 #include "qt_utilities.hpp"
+#include "tm_debug.hpp"
 #include "tm_url.hpp"
 #include <QImage>
 
@@ -79,6 +80,17 @@ mupdf_picture_rep::internal_get_pixel (int x, int y) {
   bool           alpha  = pix->alpha;
   int            stride = pix->stride;
   int            row    = h - 1 - y;
+  if (samples == NULL) {
+    // 关键防御：底层样本缓冲区异常时记录一次错误并返回透明像素
+    static bool logged_null_samples= false;
+    if (!logged_null_samples) {
+      std_error << "mupdf_picture_rep::internal_get_pixel: pixmap samples is "
+                   "NULL"
+                << LF;
+      logged_null_samples= true;
+    }
+    return 0;
+  }
   // MuPDF 像素内存按 stride 排列，不能再按 color* 做线性强转
   unsigned char* p= samples + row * stride + x * n;
 
@@ -91,6 +103,14 @@ mupdf_picture_rep::internal_get_pixel (int x, int y) {
     int a= p[3];
     if (a == 255 || !alpha) return rgb_color (p[0], p[1], p[2], 255);
     return rgbap_to_argb ((a << 24) + (p[2] << 16) + (p[1] << 8) + p[0]);
+  }
+  // 非预期通道数只打印一次，避免高频取样导致日志洪泛
+  static bool logged_unsupported_channels= false;
+  if (!logged_unsupported_channels) {
+    std_error << "mupdf_picture_rep::internal_get_pixel: unsupported channel "
+                 "count n="
+              << n << ", alpha=" << alpha << ", stride=" << stride << LF;
+    logged_unsupported_channels= true;
   }
   return 0;
 }
@@ -106,6 +126,17 @@ mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
   bool           alpha  = pix->alpha;
   int            stride = pix->stride;
   int            row    = h - 1 - y;
+  if (samples == NULL) {
+    // 关键防御：底层样本缓冲区异常时记录一次错误并直接忽略写入
+    static bool logged_null_samples= false;
+    if (!logged_null_samples) {
+      std_error << "mupdf_picture_rep::internal_set_pixel: pixmap samples is "
+                   "NULL"
+                << LF;
+      logged_null_samples= true;
+    }
+    return;
+  }
   // MuPDF 像素内存按 stride 排列，不能再按 color* 做线性强转
   unsigned char* p= samples + row * stride + x * n;
 
@@ -131,6 +162,16 @@ mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
       p[1]= (unsigned char) g;
       p[2]= (unsigned char) b;
       p[3]= (unsigned char) a;
+    }
+  }
+  else {
+    // 非预期通道数只打印一次，避免批量写像素时日志洪泛
+    static bool logged_unsupported_channels= false;
+    if (!logged_unsupported_channels) {
+      std_error << "mupdf_picture_rep::internal_set_pixel: unsupported channel "
+                   "count n="
+                << n << ", alpha=" << alpha << ", stride=" << stride << LF;
+      logged_unsupported_channels= true;
     }
   }
 }
