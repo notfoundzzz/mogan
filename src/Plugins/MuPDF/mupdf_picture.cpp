@@ -105,8 +105,8 @@ mupdf_picture_rep::internal_get_pixel (int x, int y) {
     }
     return 0;
   }
-  int            row    = h - 1 - y;
-  unsigned char* p      = samples + row * stride + x * n;
+  int            row= h - 1 - y;
+  unsigned char* p  = samples + row * stride + x * n;
 
   int r= 0, g= 0, b= 0, a= 255;
   if (n == 1) {
@@ -163,8 +163,8 @@ mupdf_picture_rep::internal_set_pixel (int x, int y, color c) {
     }
     return;
   }
-  int            row    = h - 1 - y;
-  unsigned char* p      = samples + row * stride + x * n;
+  int            row= h - 1 - y;
+  unsigned char* p  = samples + row * stride + x * n;
 
   int r, g, b, a;
   get_rgb_color (c, r, g, b, a);
