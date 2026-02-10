@@ -591,7 +591,9 @@ init_texmacs () {
 void
 load_welcome_doc () {
   if (DEBUG_STD) debug_boot << "Loading welcome message...\n";
-  string cmd= "(mogan-welcome)";
+  /// @brief 启动阶段加载欢迎文档，复用空白缓冲区以避免多出“无标题”文档。
+  /// 例：首次启动时仅显示欢迎文档。
+  string cmd= "(mogan-welcome-startup)";
   exec_delayed (scheme_cmd (cmd));
 }
 
@@ -899,6 +901,9 @@ TeXmacs_main (int argc, char** argv) {
     server sv (app_type::RESEARCH);
     string where     = "";
     bool   first_file= true;
+    /// @brief 启动时是否已有外部文件待打开（例如：双击文件或命令行传入）。
+    /// 目的：若已打开文件，则不再显示欢迎文档，避免多余缓冲区。
+    bool has_startup_file= false;
     for (i= 1; i < argc; i++) {
       if (argv[i] == NULL) break;
       string s= argv[i];
@@ -909,9 +914,10 @@ TeXmacs_main (int argc, char** argv) {
         if (!is_rooted (u)) u= resolve (url_pwd (), "") * u;
         string b= scm_quote (as_string (u));
         string cmd;
+        has_startup_file= true;
         // only open window once
         if (first_file) {
-          cmd       = "(load-buffer " * b * " " * where * ")";
+          cmd       = "(load-buffer-into-current " * b * " " * where * ")";
           first_file= false;
         }
         else {
@@ -929,13 +935,17 @@ TeXmacs_main (int argc, char** argv) {
         i++;
       }
     }
-    if (install_status == 1 || install_status == 2) {
-      load_welcome_doc ();
-    }
-
     if (number_buffers () == 0) {
+      /// @brief 启动时确保至少有一个窗口与缓冲区可用。
+      /// 例：无论打开文件或欢迎文档，都需要有效视图避免崩溃。
       if (DEBUG_STD) debug_boot << "Creating 'no name' buffer...\n";
       open_window ();
+    }
+
+    /// @brief 仅在无启动文件时加载欢迎文档，避免“打开文件 + 欢迎文档”并存。
+    /// 例：从文件管理器“打开方式”启动时，不应额外弹出欢迎文档。
+    if ((install_status == 1 || install_status == 2) && !has_startup_file) {
+      load_welcome_doc ();
     }
 
     if (DEBUG_BENCH) lolly::system::bench_print (std_bench);

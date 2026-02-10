@@ -138,15 +138,23 @@
   (load-buffer (get-remote-planet-url)))
 
 ;; 加载Mogan欢迎页面
-(tm-define (mogan-welcome)
-  ;; 根据当前语言设置加载相应语言的Mogan欢迎文档
+;; 获取Mogan欢迎文档路径
+;; 返回值: 文档路径字符串
+(define (mogan-welcome-path)
   (let* ((lan (string-take (language-to-locale (get-output-language)) 2))
          (path (string-append "$TEXMACS_PATH/doc/about/mogan/stem." lan ".tmu"))
          (en_doc (string-append "$TEXMACS_PATH/doc/about/mogan/stem.en.tmu")))
-    ;; 优先加载本地化语言文档，如果不存在则加载英语文档
-    (if (url-exists? path)
-        (load-buffer (system->url path))
-        (load-buffer (system->url en_doc)))))
+    (if (url-exists? path) path en_doc)))
+
+(tm-define (mogan-welcome)
+  ;; 根据当前语言设置加载相应语言的Mogan欢迎文档
+  (load-buffer (system->url (mogan-welcome-path))))
+
+;; 启动时加载欢迎文档，复用当前空白缓冲区
+(tm-define (mogan-welcome-startup)
+  ;; @brief 启动阶段加载欢迎文档，避免多出“无标题”缓冲区。
+  ;; 例：首次启动时只显示欢迎文档。
+  (load-buffer-into-current (system->url (mogan-welcome-path))))
 
 ;; 加载Xmacs星球页面
 (tm-define (xmacs-planet)

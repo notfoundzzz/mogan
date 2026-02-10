@@ -617,6 +617,56 @@
                 (load-buffer-check-permissions name opts)))))
       (load-buffer-check-permissions name opts)))
 
+(tm-define (load-buffer-into-current name . opts)
+  ;; @brief 启动阶段复用当前空白缓冲区加载文档，避免多出“无标题”缓冲区。
+  ;; 例：双击文件启动时，当前空白缓冲区会被重命名并加载目标文档。
+  (let ((cur (current-buffer)))
+    (if (and cur (url-scratch? cur) (not (buffer-modified? cur))
+             (url-exists? name))
+        (letrec
+          ;; @brief 复用当前缓冲区加载指定文档，保持与正常加载一致的提示行为。
+          ;; 例：遇到 autosave 时仍然弹出恢复确认框。
+          ((load-into-current
+             (lambda (target)
+               (let* ((doc (tree-import target (url-format target))))
+                 (buffer-rename cur name)
+                 (buffer-set name doc)
+                 (load-buffer-open name opts))))
+           (load-check-permissions
+             (lambda ()
+               (let* ((path (url->system name))
+                      (vname `(verbatim ,(utf8->cork path))))
+                 (cond ((and (not (url-test? name "f")) (url-exists? name))
+                        (with msg "The file cannot be loaded or created:"
+                          (begin
+                            (debug-message "debug-io" (string-append msg "\n" path))
+                            (notify-now `(concat ,msg "<br>" ,vname)))))
+                       ((and (url-test? name "f") (not (url-test? name "r")))
+                        (with msg `(concat ,(translate "You do not have read access to") " " ,vname)
+                          (show-message msg "Load file")))
+                       ((buffer-exists? name)
+                        ;; 复用当前空白缓冲区前，优先切换到已打开的目标缓冲区。
+                        (load-buffer-open name opts)
+                        (buffer-close cur))
+                       (else (load-into-current name)))))))
+          (if (and (autosave-propose name) (nin? :strict opts))
+              (with question (if (autosave-rescue? name)
+                                 "Rescue file from crash?"
+                                 "Load more recent autosave file?")
+                (user-confirm question #t
+                  (lambda (answ)
+                    (if answ
+                        (let* ((autosave-name (autosave-propose name))
+                               (format (url-format name))
+                               (doc (tree-import autosave-name format)))
+                          (buffer-rename cur name)
+                          (buffer-set name doc)
+                          (load-buffer-open name opts)
+                          (buffer-pretend-modified name))
+                        (load-check-permissions)))))
+              (load-check-permissions)))
+        (apply load-buffer-main (cons name opts)))))
+
 (tm-define (load-buffer-main name . opts)
   ;;(display* "load-buffer-main " name ", " opts "\n")
   (if (and (not (url-exists? name))
