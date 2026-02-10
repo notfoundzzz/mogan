@@ -269,7 +269,8 @@ qt_inputs_list_widget_rep::field (int i) {
 
 void
 qt_inputs_list_widget_rep::perform_dialog () {
-  if ((N (children) == 1) && (field (0)->type == "question")) {
+  if ((N (children) == 1) && (field (0)->type == "question" ||
+                              field (0)->type == "question-no-cancel")) {
     // then use Qt messagebox for smoother, more standard UI
     QWidget* mainwindow= QApplication::activeWindow ();
     // main texmacs window. There are probably better ways...
@@ -279,7 +280,10 @@ qt_inputs_list_widget_rep::perform_dialog () {
     QMessageBox msgBox (mainwindow);
     // sets parent widget, so that it appears at the proper location
     msgBox.setText (to_qstring (field (0)->prompt));
-    msgBox.addButton (qt_translate ("Cancel"), QMessageBox::RejectRole);
+    /// 对于 question-no-cancel，不添加取消按钮，避免出现三选项对话框。
+    bool add_cancel= (field (0)->type == "question");
+    if (add_cancel)
+      msgBox.addButton (qt_translate ("Cancel"), QMessageBox::RejectRole);
 
     // Allow any number of choices. The first one is the default.
     int                   choices= N (field (0)->proposals);
@@ -294,7 +298,8 @@ qt_inputs_list_widget_rep::perform_dialog () {
       msgBox.setDefaultButton (buttonlist[0]);
       for (int i= 0; i < choices - 1; ++i)
         QWidget::setTabOrder (buttonlist[i], buttonlist[i + 1]);
-      QWidget::setTabOrder (buttonlist[choices - 1], msgBox.escapeButton ());
+      if (add_cancel)
+        QWidget::setTabOrder (buttonlist[choices - 1], msgBox.escapeButton ());
     }
     msgBox.setWindowTitle (qt_translate ("Question"));
     msgBox.setIcon (QMessageBox::Question);

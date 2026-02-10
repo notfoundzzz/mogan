@@ -77,9 +77,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (user-confirm-open-pdf fname)
-  (user-confirm "Open PDF?" #f
-    (lambda (open?)
-      (when open? (preview-file fname)))))
+  (user-ask (list "Open PDF?" "question-no-cancel"
+                  (translate "no") (translate "yes"))
+    (lambda (answ)
+      (when (yes? answ) (preview-file fname)))))
 
 (tm-define (wrapped-print-to-file fname)
   (system-wait "Exporting, " (translate "please wait"))
